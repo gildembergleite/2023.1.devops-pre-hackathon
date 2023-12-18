@@ -1,0 +1,40 @@
+name: CD - Push to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        run: |
+          npm i -f
+          npm test
+
+      - name: SonarCloud Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner
+
+      - name: Build for GitHub Pages
+        run: |
+          npm run build
+
+      - name: Deploy to GitHub Pages
+        run: |
+          git checkout --orphan gh-pages
+          git rm -rf .
+          cp -r build/. .
+          git add .
+          git commit -m "GitHub Pages deployment"
+          git push origin gh-pages --force
+          git checkout main
